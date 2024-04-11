@@ -50,12 +50,22 @@ def policy_evaluation(P, nS, nA, policy, gamma=0.9, tol=1e-3):
 		The value function of the given policy, where value_function[s] is
 		the value of state s
 	"""
-
-	value_function = np.zeros(nS)
-
 	############################
 	# YOUR IMPLEMENTATION HERE #
+	
+	value_function = np.zeros(nS)
+	while True:
+		prev_value_function = value_function
+		value_function = np.zeros(nS)
 
+		for state in range(nS):
+			action = policy[state]
+			for probability, next_state, reward, _ in P[state][action]:
+				value_function[state] += probability * (
+					reward + gamma * prev_value_function[next_state])
+		
+		if np.max(value_function - prev_value_function) < tol:
+			break
 
 	############################
 	return value_function
@@ -86,6 +96,13 @@ def policy_improvement(P, nS, nA, value_from_policy, policy, gamma=0.9):
 	############################
 	# YOUR IMPLEMENTATION HERE #
 
+	for state in range(nS):
+		expected_value = np.zeros(nA)
+		for action in range(nA):
+			for probability, next_state, reward, _ in P[state][action]:
+				expected_value[action] += probability * (
+					reward + gamma * value_from_policy[next_state])
+		new_policy[state] = np.argmax(expected_value)
 
 	############################
 	return new_policy
@@ -115,6 +132,12 @@ def policy_iteration(P, nS, nA, gamma=0.9, tol=10e-3):
 	############################
 	# YOUR IMPLEMENTATION HERE #
 
+	while True:
+		value_function = policy_evaluation(P, nS, nA, policy, gamma, tol)
+		new_policy = policy_improvement(P, nS, nA, value_function, policy, gamma)
+		if np.array_equal(new_policy, policy):
+			break
+		policy = new_policy
 
 	############################
 	return value_function, policy
@@ -142,6 +165,22 @@ def value_iteration(P, nS, nA, gamma=0.9, tol=1e-3):
 	############################
 	# YOUR IMPLEMENTATION HERE #
 
+	while True:
+		prev_value_function = value_function
+		value_function = np.zeros(nS)
+
+		for state in range(nS):
+			expected_value = np.zeros(nA)
+			for action in range(nA):
+				for probability, next_state, reward, _ in P[state][action]:
+					expected_value[action] += probability * (
+						reward + gamma * prev_value_function[next_state])
+
+			value_function[state] = np.max(expected_value)
+			policy[state] = np.argmax(expected_value)
+		
+		if np.max(value_function - prev_value_function) < tol:
+			break
 
 	############################
 	return value_function, policy
@@ -170,7 +209,7 @@ def render_single(env, policy, max_steps=100):
     episode_reward += rew
     if done:
       break
-  env.render();
+  env.render()
   if not done:
     print("The agent didn't reach a terminal state in {} steps.".format(max_steps))
   else:
@@ -183,8 +222,8 @@ def render_single(env, policy, max_steps=100):
 if __name__ == "__main__":
 
 	# comment/uncomment these lines to switch between deterministic/stochastic environments
-	env = gym.make("Deterministic-4x4-FrozenLake-v0")
-	# env = gym.make("Stochastic-4x4-FrozenLake-v0")
+	# env = gym.make("Deterministic-4x4-FrozenLake-v0")
+	env = gym.make("Stochastic-4x4-FrozenLake-v0")
 
 	print("\n" + "-"*25 + "\nBeginning Policy Iteration\n" + "-"*25)
 
